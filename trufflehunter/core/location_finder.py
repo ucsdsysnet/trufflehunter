@@ -1,12 +1,10 @@
 import subprocess
 import ipaddress
+import os 
 
 class LocationFinder:
     # Locations of Google resolvers
     google_locs = {}
-
-    # Dig or kdig?
-    dig_cmd = 'dig'
 
     def addressInNetwork(self, address, network):
         addr = ipaddress.ip_address(address)
@@ -14,8 +12,9 @@ class LocationFinder:
         return addr in net
 
     def loadGooglePoPs(self):
+        dir_path = os.path.dirname(os.path.realpath(__file__))
         locs = {}
-        with open('google_locations.txt') as all_google_pops:
+        with open('{}/../data/google_locations.txt'.format(dir_path)) as all_google_pops:
             for line in all_google_pops:
                 split = line.rstrip().split(' ')
                 network = split[0]
@@ -44,7 +43,12 @@ class LocationFinder:
                 if 'NXDOMAIN' in resp:
                     return 'NXDOMAIN_LOCATION_UNKNOWN'
                 else:
-                    return resp.split('.')[1]
+                    code = resp.split('.')[1]
+                    # Update: if not a 3-letter city code, return Error
+                    if len(code) == 3:
+                        return code
+                    else:
+                        return 'PARSE_ERROR_LOCATION_UNKNOWN'
             elif resolver == '1.1.1.1':
                 if self.dig_cmd == 'kdig':
                     chaos = 'CH'
@@ -54,10 +58,20 @@ class LocationFinder:
                 if 'NXDOMAIN' in resp:
                     return 'NXDOMAIN_LOCATION_UNKNOWN'
                 else:
-                    return resp.rstrip().replace('"', '')
+                    # Update: if not a 3-letter city code, return Error
+                    code = resp.rstrip().replace('"', '')
+                    if len(code) == 3:
+                        return code
+                    else:
+                        return 'PARSE_ERROR_LOCATION_UNKNOWN'
             elif resolver == '208.67.220.220':
                 resp = subprocess.check_output([self.dig_cmd, '@208.67.220.220', 'debug.opendns.com', '-t', 'txt', '+short'], universal_newlines=True)
-                return resp.split('\n')[0].split(' ')[1].split('.')[1].replace('"','')
+                code = resp.split('\n')[0].split(' ')[1].split('.')[1].replace('"','')
+                # Update: if not a 3-letter city code, return Error
+                if len(code) == 3:
+                    return code
+                else:
+                    return 'PARSE_ERROR_LOCATION_UNKNOWN' 
             else:
                 return 'UNKNOWN_RESOLVER_LOCATION_UNKNOWN'
         except subprocess.CalledProcessError:
@@ -72,54 +86,7 @@ class LocationFinder:
     def setDigCmd(self, dig_cmd):
         self.dig_cmd = dig_cmd
 
-    def __init__(self, dig_cmd):
+    def __init__(self, dig_cmd = 'dig'):
         # Set up the list of Google locations so we can tell which Google PoP this ark node hits
         self.loadGooglePoPs()
         self.setDigCmd(dig_cmd)
-
-
-class RipeAtlasLocationFinder(LocationFinder):
-    def getPoPLocation(self, resolver, dig_loc, status):
-        try:
-            if resolver == '8.8.8.8' or resolver == '8.8.4.4':
-                addr = dig_loc.replace('"','')
-                for network in self.google_locs.keys():
-                    if self.addressInNetwork(dig_loc, network):
-                        return self.google_locs[network]
-                return 'UNKNOWN_LOCATION_GOOGLE_NET_NOT_FOUND'
-            elif resolver == '9.9.9.9' or resolver == '149.112.112.112':
-                if 'NXDOMAIN' in status:
-                    return 'NXDOMAIN_LOCATION_UNKNOWN'
-                else:
-                    return dig_loc.split('.')[1]
-            elif resolver == '1.1.1.1' or resolver == '1.0.0.1':
-                if 'NXDOMAIN' in status:
-                    return 'NXDOMAIN_LOCATION_UNKNOWN'
-                else:
-                    return dig_loc.rstrip().replace('"', '')
-            elif resolver == '208.67.220.220':
-                return dig_loc.split('\n')[0].split(' ')[1].split('.')[1].replace('"','')
-            else:
-                return 'UNKNOWN_RESOLVER_LOCATION_UNKNOWN'
-        except AttributeError as err:
-            return 'ATTRIBUTE_ERROR_LOCATION_UNKNOWN'
-        except KeyError:
-            return 'KEY_ERROR_LOCATION_UNKNOWN'
-        except Exception as err:
-            return 'UNKNOWN_ERROR_LOCATION_UNKNOWN'
-    
-    def loadGooglePoPs(self, filename):
-        locs = {}
-        with open(filename) as all_google_pops:
-            for line in all_google_pops:
-                split = line.rstrip().split(' ')
-                network = split[0]
-                loc = split[1]
-                locs[network] = loc
-        self.google_locs = locs
-
-    def __init__(self, google_pops):
-        self.loadGooglePoPs(google_pops)
-
-# l = LocationFinder()
-# print(l.detectDigCmd())

@@ -1,4 +1,6 @@
-import dns_lib
+from . import dns_lib
+from . import location_finder
+from .compare_results import analyzeArk
 import threading
 import time
 import logging
@@ -10,18 +12,14 @@ import os
 import subprocess
 import argparse
 import random
-import location_finder
+from collections import defaultdict
 from datetime import datetime
 from datetime import timedelta
+
 
 class BaseSearcher:
     domains = []
     resolver = ''
-    _lock = threading.Lock()
-
-    # This must be protected by _lock 
-    # (or at least, it used to, and I don't want to introduce bugs by removing it when I'm not sure)
-    domain_file = ''
 
     # Dig or kdig?
     dig_cmd = ''
@@ -55,19 +53,20 @@ class BaseSearcher:
                 logging.critical('Neither dig nor kdig found on this machine.')
                 exit(1)
 
-    def updateDomains(self):
-        # Look for hostname.seldusaer.xyz subdomain to see which ISP each ark node is in (we can check our authoritative ns logs)
-        self.domains.append(self.hostname + '.seldusaer.xyz')
-        with open(self.domain_file) as f:
-            for line in f:
-                domain = line.rstrip()
-                if domain not in self.domains:
-                    self.domains.append(domain)
+    # def updateDomains(self):
+    #     # Look for hostname.seldusaer.xyz subdomain to see which ISP each ark node is in (we can check our authoritative ns logs)
+    #     # this part is not needed
+    #     # self.domains.append(self.hostname + '.seldusaer.xyz')
+    #     with open(self.domain_file) as f:
+    #         for line in f:
+    #             domain = line.rstrip()
+    #             if domain not in self.domains:
+    #                 self.domains.append(domain)
     
     # Generate commands to pass via command line to dig/kdig
     def generateCommands(self, resolver):
         cmds = []
-        repeats = 5
+        repeats = 10 # generate 1 dig request now
 
         # Generate commands for dig's batch mode
         for d in self.domains:
@@ -90,7 +89,6 @@ class BaseSearcher:
         return cmds
 
     def createSearcherCommands(self, cmds):
-        sleep_interval = 30
         script = ''
         # script += '#!/bin/bash\n\n'
         script += self.dig_cmd + ' '
@@ -105,23 +103,23 @@ class BaseSearcher:
     Over some time interval smaller than a minute, request all domains from self.resolvers.
     '''
     def searchForDomains(self, shutdown_event=None):
-            
+        search_results = []
         for resolver in self.resolvers:
             cmd_file = self.commandFileName(resolver)
             
             # Find out which PoP this node currently hits
             loc = self.location_finder.getPoPLocation(resolver)
+            print("searchForDomains loc:",loc)
+            search_results += dns_lib.multipleDigRequests(self.scripts[resolver], self.hostname, resolver, loc=loc, dig_cmd=self.dig_cmd)
+        return search_results
 
-            dns_lib.multipleDigRequests(self.scripts[resolver], self.hostname, resolver, loc=loc, dig_cmd=self.dig_cmd)
-
-    def __init__(self, resolvers, hostname, domain_file):
+    def __init__(self, resolvers, hostname, domains):
         self.detectDigCmd()
         self.location_finder = location_finder.LocationFinder(self.dig_cmd)
-        # self.updateDomains()
         self.resolvers = resolvers
         self.hostname = hostname
-        self.domain_file = domain_file
-        self.updateDomains()
+        self.domains = domains
+        #self.updateDomains()
 
         for resolver in resolvers:
             cmds = self.generateCommands(resolver)
@@ -129,18 +127,23 @@ class BaseSearcher:
             self.scripts[resolver] = self.createSearcherCommands(cmds)
 
 class Searcher(BaseSearcher):
-    iterations = 30
+    # Todo: Determine how many iterations we want to probe
+    iterations = 1
     threads = []
     hostname = ''
     dig_cmd = 'dig'
     start_time = datetime.now()
 
-    def runBaseSearcher(self, resolvers, domain_file):
-        base_searcher = BaseSearcher(resolvers, self.hostname, domain_file)
+    def runBaseSearcher(self, resolvers, domains):
+        base_searcher = BaseSearcher(resolvers, self.hostname, domains)
         start_time = datetime.now()
+        all_search_results = []
         for i in range(0, self.iterations):
             # Search for domains
-            base_searcher.searchForDomains()
+            search_results = base_searcher.searchForDomains()
+            #print(len(search_results))
+            all_search_results += search_results
+            # Todo: dump search results to a database
             end_time = datetime.now()
 
             # On the last iteration, don't sleep: we need to rotate the result file out.
@@ -150,64 +153,39 @@ class Searcher(BaseSearcher):
             # Sleep for the remainder of the minute, but calculate that minute using total start time so errors don't accumulate
             time_remaining = (self.start_time + timedelta(minutes=(i+1)) - end_time).total_seconds()
             if time_remaining <= 0:
-                with open(self.hostname+'_error.log', 'a') as logfile:
-                    logfile.write("Negative time_remaining in runBaseSearcher:\n")
-                    logfile.write("\tself.start_time: "+str(self.start_time)+"\n")
-                    logfile.write("\ttimedelta(minutes=(i+1)): " + str(timedelta(minutes=(i+1))) + "\n")
-                    logfile.write("\ti: "+ str(i))
-                    logfile.write("\tend_time: " + str(end_time)+"\n")
-                    logfile.write("\ttime_remaining: "+ str(time_remaining) + "\n")
+                logging.debug("Negative time_remaining in runBaseSearcher:\n")
+                logging.debug("\tself.start_time: "+str(self.start_time)+"\n")
+                logging.debug("\ttimedelta(minutes=(i+1)): " + str(timedelta(minutes=(i+1))) + "\n")
+                logging.debug("\ti: "+ str(i))
+                logging.debug("\tend_time: " + str(end_time)+"\n")
+                logging.debug("\ttime_remaining: "+ str(time_remaining) + "\n")
             elif time_remaining < 60 and time_remaining >= 0:
                 time.sleep(time_remaining)
                 # logging.debug("Time remaining: " + str(time_remaining))
             elif time_remaining > 60:
-                with open(self.hostname+'_error.log', 'a') as logfile:
-                    logfile.write("time_remaining greater than 60 in runBaseSearcher: " + str(time_remaining) + "\n")
+                logging.debug("time_remaining greater than 60 in runBaseSearcher: " + str(time_remaining) + "\n")
+        
+        pop_to_data_mapping = defaultdict(lambda: defaultdict(list))
+        for r in all_search_results:
+            print(r['dig_ts'],r['ttl'],r['pop_location'],r["resolver"])#
+            pop_to_data_mapping[r["resolver"]]["dig_ts"].append(r["dig_ts"])
+            pop_to_data_mapping[r["resolver"]]["ttl"].append(r["ttl"])
+            pop_to_data_mapping[r["resolver"]]["pop_location"].append(r["pop_location"])
 
-    def __init__(self, resolvers, hostname='UNKNOWN_HOST', domain_file='stalkerware_domains.txt'):
+        
+        for key in pop_to_data_mapping.keys():
+            pop, count = analyzeArk(pop_to_data_mapping[key],key)
+            print("Resolver:{}, Location: {}, Cache Count: {}".format(key, pop, count))
+        
+
+    def __init__(self, resolvers, domains, hostname='UNKNOWN_HOST'):
         self.hostname = hostname
-        self.domain_file = domain_file
-
+        self.domains = domains
         # Record start time - measurements can't take longer than self.iterations minutes.
         self.start_time = datetime.now()
 
-        self.runBaseSearcher(resolvers, domain_file)
+        self.runBaseSearcher(resolvers, domains)
 
-def main():
-    logging.basicConfig(
-        format='%(asctime)s %(levelname)-8s %(message)s',
-        level=logging.DEBUG,
-        datefmt='%Y-%m-%d %H:%M:%S')
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--input", "-i", help="File to read domains from")
-    parser.add_argument("--log", "-l", help="Previous searcher failed to finish in time, so record start time in error log")
-    args = parser.parse_args()
-
-    default_resolvers = ['8.8.8.8', '9.9.9.9', '1.1.1.1', '208.67.220.220']
-    # default_resolvers = ['8.8.8.8', '1.1.1.1', '208.67.220.220']
-    
-
-    try:
-        hostname = subprocess.check_output(['hostname'], universal_newlines=True)
-    except:
-        print("Failed to get hostname")
-        exit(1)
-    hostname = str(hostname).rstrip()
-    
-    if not args.input:
-        with open(hostname+'_error.log', 'a') as logfile:
-            logfile.write('Input file must be specified with -i or --input. Exiting.')
-        exit(1)
-
-    if args.log:
-        with open(hostname+'_error.log', 'a') as log:
-            log.write("Parser started at " + str(datetime.now())+"\n") 
-    
-    searcher = Searcher(default_resolvers, hostname, args.input)
-
-if __name__=="__main__":
-    main()
     
         
 
