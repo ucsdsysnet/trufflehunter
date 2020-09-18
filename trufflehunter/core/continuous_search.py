@@ -165,17 +165,23 @@ class Searcher(BaseSearcher):
             elif time_remaining > 60:
                 logging.debug("time_remaining greater than 60 in runBaseSearcher: " + str(time_remaining) + "\n")
         
-        pop_to_data_mapping = defaultdict(lambda: defaultdict(list))
+        # key for first dict: domain name
+        # key for second dict: resolver
+        # key for third dict: data entries
+        # location is fixed for one resolver from one vantage point
+        domain_to_pop_to_data_mapping = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
         for r in all_search_results:
-            print(r['dig_ts'],r['ttl'],r['pop_location'],r["resolver"])#
+            print(r["dig_ts"],r["ttl"],r["pop_location"])
+            pop_to_data_mapping = domain_to_pop_to_data_mapping[r["requested_domain"]]
             pop_to_data_mapping[r["resolver"]]["dig_ts"].append(r["dig_ts"])
             pop_to_data_mapping[r["resolver"]]["ttl"].append(r["ttl"])
             pop_to_data_mapping[r["resolver"]]["pop_location"].append(r["pop_location"])
 
-        
-        for key in pop_to_data_mapping.keys():
-            pop, count = analyzeArk(pop_to_data_mapping[key],key)
-            print("Resolver:{}, Location: {}, Cache Count: {}".format(key, pop, count))
+        for requested_domain in domain_to_pop_to_data_mapping.keys():
+            requested_domain = requested_domain.rstrip(".")
+            for key in pop_to_data_mapping.keys():
+                pop, count = analyzeArk(pop_to_data_mapping[key],key)
+                print("Domain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain, key, pop, count, "Now"))
         
 
     def __init__(self, resolvers, domains, hostname='UNKNOWN_HOST'):
