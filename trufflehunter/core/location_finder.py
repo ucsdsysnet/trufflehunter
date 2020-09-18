@@ -32,7 +32,7 @@ class LocationFinder:
                 for network in self.google_locs.keys():
                     # print(network)
                     if self.addressInNetwork(addr, network):
-                        return self.google_locs[network]
+                        return self.google_locs[network].upper()
                 return 'UNKNOWN_LOCATION_GOOGLE_NET_NOT_FOUND'
             elif resolver == '9.9.9.9':
                 if self.dig_cmd == 'kdig':
@@ -46,7 +46,7 @@ class LocationFinder:
                     code = resp.split('.')[1]
                     # Update: if not a 3-letter city code, return Error
                     if len(code) == 3:
-                        return code
+                        return code.upper()
                     else:
                         return 'PARSE_ERROR_LOCATION_UNKNOWN'
             elif resolver == '1.1.1.1':
@@ -61,7 +61,7 @@ class LocationFinder:
                     # Update: if not a 3-letter city code, return Error
                     code = resp.rstrip().replace('"', '')
                     if len(code) == 3:
-                        return code
+                        return code.upper()
                     else:
                         return 'PARSE_ERROR_LOCATION_UNKNOWN'
             elif resolver == '208.67.220.220':
@@ -69,7 +69,7 @@ class LocationFinder:
                 code = resp.split('\n')[0].split(' ')[1].split('.')[1].replace('"','')
                 # Update: if not a 3-letter city code, return Error
                 if len(code) == 3:
-                    return code
+                    return code.upper()
                 else:
                     return 'PARSE_ERROR_LOCATION_UNKNOWN' 
             else:
