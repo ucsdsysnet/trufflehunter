@@ -173,17 +173,18 @@ class Searcher(BaseSearcher):
         # location is fixed for one resolver from one vantage point
         domain_to_pop_to_data_mapping = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
         for r in all_search_results:
-            print(r["dig_ts"],r["ttl"],r["pop_location"])
+            print(r["requested_domain"],r["resolver"],r["dig_ts"],r["ttl"],r["pop_location"])
             pop_to_data_mapping = domain_to_pop_to_data_mapping[r["requested_domain"]]
             pop_to_data_mapping[r["resolver"]]["dig_ts"].append(r["dig_ts"])
             pop_to_data_mapping[r["resolver"]]["ttl"].append(r["ttl"])
             pop_to_data_mapping[r["resolver"]]["pop_location"].append(r["pop_location"])
 
         for requested_domain in domain_to_pop_to_data_mapping.keys():
-            requested_domain = requested_domain.rstrip(".")
+            pop_to_data_mapping = domain_to_pop_to_data_mapping[requested_domain]
             for key in pop_to_data_mapping.keys():
+                print(pop_to_data_mapping[key]["ttl"])
                 pop, count = analyzeArk(pop_to_data_mapping[key],key)
-                print("Domain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain, key, pop, count, self.start_time.strftime("%Y-%m-%d %X %Z")))
+                print("Domain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain.rstrip("."), key, pop, count, self.start_time.strftime("%Y-%m-%d %X %Z")))
         
 
     def __init__(self, resolvers, domains, hostname='UNKNOWN_HOST'):
