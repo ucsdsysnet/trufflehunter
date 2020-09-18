@@ -64,6 +64,8 @@ def main():
 
     
     searcher = Searcher(args.resolvers, domains, hostname=hostname)
+    # Todo: return data for front end
+    _ = searcher.runBaseSearcher()
 
 if __name__=="__main__":
     main()

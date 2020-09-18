@@ -134,8 +134,10 @@ class Searcher(BaseSearcher):
     dig_cmd = 'dig'
     start_time = datetime.now()
 
-    def runBaseSearcher(self, resolvers, domains):
-        base_searcher = BaseSearcher(resolvers, self.hostname, domains)
+    def runBaseSearcher(self):
+        self.start_time = datetime.now()
+
+        base_searcher = BaseSearcher(self.resolvers, self.hostname, self.domains)
         start_time = datetime.now()
         all_search_results = []
         for i in range(0, self.iterations):
@@ -181,17 +183,14 @@ class Searcher(BaseSearcher):
             requested_domain = requested_domain.rstrip(".")
             for key in pop_to_data_mapping.keys():
                 pop, count = analyzeArk(pop_to_data_mapping[key],key)
-                print("Domain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain, key, pop, count, "Now"))
+                print("Domain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain, key, pop, count, self.start_time.strftime("%Y-%m-%d %X %Z")))
         
 
     def __init__(self, resolvers, domains, hostname='UNKNOWN_HOST'):
         self.hostname = hostname
         self.domains = domains
-        # Record start time - measurements can't take longer than self.iterations minutes.
-        self.start_time = datetime.now()
-
-        self.runBaseSearcher(resolvers, domains)
-
+        self.resolvers = resolvers
+        
     
         
 
