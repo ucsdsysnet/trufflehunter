@@ -183,7 +183,8 @@ class Searcher(BaseSearcher):
             pop_to_data_mapping = domain_to_pop_to_data_mapping[requested_domain]
             for key in pop_to_data_mapping.keys():
                 print(pop_to_data_mapping[key]["ttl"])
-                pop, count = estimateFilledCaches(pop_to_data_mapping[key],key)
+                count = estimateFilledCaches(pop_to_data_mapping[key],key)
+                pop = all_search_results[0]['pop_location']
                 print("Domain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain.rstrip("."), key, pop, count, self.start_time.strftime("%Y-%m-%d %X %Z")))
         
 
