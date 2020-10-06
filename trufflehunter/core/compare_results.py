@@ -108,7 +108,7 @@ def estimateFilledCaches(ark_data, resolver):
     ttls = []
 
     for (ts, ttl) in zip(ark_data['dig_ts'], ark_data['ttl']):
-        if ttl == -1:
+        if ttl <= 0:
             continue
         print(ts, ttl)
         x_ints.append(ts + timedelta(seconds=ttl))
