@@ -2,6 +2,7 @@ from trufflehunter.core.continuous_search import Searcher
 from trufflehunter.core.location_finder import LocationFinder
 from trufflehunter.core.const import ALL_RESOLVER_IPS
 from trufflehunter.core.utils import readDomainFile, parseDomains, printAndLog
+from os import path
 import argparse
 import subprocess
 import logging
@@ -49,6 +50,10 @@ def main():
         exit(1)
     elif args.file:
         # check file exists
+        if path.exists(args.file) == False:
+            printAndLog("ERROR", "Please specify a valid file. Exiting.")
+            exit(1)
+            
         domains = readDomainFile(args.file)
         domains = parseDomains(domains)
     else:
