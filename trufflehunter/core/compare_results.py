@@ -12,6 +12,24 @@ def numFilledTTLs(x_ints, max_ttl):
         ttl_epochs.append(int(int(x.timestamp()) / max_ttl) * max_ttl)
     return len(set(ttl_epochs))
 
+def coalesceHeadOrTail(lo, mid, hi):
+    coalesced = []
+    one = timedelta(seconds=1)
+    two = timedelta(seconds=2)
+    # If all three x_ints are a group, return one of them.
+    if lo + one == mid and mid + one == hi:
+        coalesced.append(mid)
+    # If either two are a group, return one from that group and the ungrouped x_int.
+    elif lo + one == mid:
+        coalesced += [mid, hi]
+    elif mid + one == hi:
+        coalesced += [lo, mid]
+    # Else, return all three.
+    else:
+        coalesced += [lo, mid, hi]
+    print("Coalesced head or tail: ", coalesced)
+    return coalesced
+
 def coalesce(x_ints):
     x_ints = sorted(set(x_ints))
     print("Set of x_ints: ", x_ints)
