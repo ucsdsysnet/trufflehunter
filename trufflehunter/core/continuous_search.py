@@ -1,6 +1,6 @@
 from . import dns_lib
 from . import location_finder
-from .compare_results import analyzeArk
+from .compare_results import estimateFilledCaches
 import threading
 import time
 import logging
@@ -183,7 +183,7 @@ class Searcher(BaseSearcher):
             pop_to_data_mapping = domain_to_pop_to_data_mapping[requested_domain]
             for key in pop_to_data_mapping.keys():
                 print(pop_to_data_mapping[key]["ttl"])
-                pop, count = analyzeArk(pop_to_data_mapping[key],key)
+                pop, count = estimateFilledCaches(pop_to_data_mapping[key],key)
                 print("Domain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain.rstrip("."), key, pop, count, self.start_time.strftime("%Y-%m-%d %X %Z")))
         
 
