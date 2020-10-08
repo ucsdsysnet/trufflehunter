@@ -43,20 +43,17 @@ def main():
     else:
         my_logger.addHandler(logging.NullHandler())
 
-    # start service
-    my_logger.info("TrufferHunter Started At " + str(datetime.now()))
-
     # sanity check 
     if not args.file and not args.domain:
-        printAndLog("You need to specify a domain (--domain/-d) or a list of domains (--file/-f, one domain per line). Exiting.", level = "ERROR")
+        print("You need to specify a domain (--domain/-d) or a list of domains (--file/-f, one domain per line). Exiting.")
         exit(1)
     elif args.file and args.domain:
-        printAndLog("You can't specify both a domain and a list of domains. Exiting.", level = "ERROR")
+        print("You can't specify both a domain and a list of domains. Exiting.")
         exit(1)
     elif args.file:
         # check file exists
         if path.exists(args.file) == False:
-            printAndLog("Please specify a valid file. Exiting.", level = "ERROR")
+            print("Please specify a valid file. Exiting.")
             exit(1)
             
         domains = readDomainFile(args.file)
@@ -68,13 +65,16 @@ def main():
         config.Config["search"]["number_of_attempts"] = args.num_of_attempts
     
     if len(domains) == 0:
-        printAndLog("Please specify a valid domain. Exiting.", level = "ERROR")
+        print("Please specify a valid domain. Exiting.")
         exit(1)
 
     if len(args.resolvers) == 0:
-        printAndLog("Specify at least 1 resolver to proceed. Exiting.", level = "ERROR")
+        print("Specify at least 1 resolver to proceed. Exiting.")
         exit(1)
 
+    # start service
+    my_logger.info("TrufferHunter Started At " + str(datetime.now()))
+    
     print("Runtime Configs: number_of_attempts_per_domain={}, resolvers_to_try={}, verbose={}\n"\
         .format(config.Config["search"]["number_of_attempts"],\
             " ".join(config.Config["search"]["resolvers"]),\
