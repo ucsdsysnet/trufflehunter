@@ -1,0 +1,9 @@
+{
+    "search":{
+        "number_of_attempts": 10,
+        "resolvers": ["1.1.1.1", "9.9.9.9"]
+    },
+    "other":{
+        "verbose":false
+    }
+}

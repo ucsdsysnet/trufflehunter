@@ -1,25 +1,29 @@
 from . import dns_lib
 from . import location_finder
+from . import config
+from .utils import printAndLog
 from .compare_results import estimateFilledCaches
+from collections import defaultdict
+from datetime import datetime
+from datetime import timedelta
+from traceback import print_exc
 import threading
 import time
 import logging
 import signal
 import sys
 import concurrent.futures
-from traceback import print_exc
 import os
 import subprocess
 import argparse
 import random
-from collections import defaultdict
-from datetime import datetime
-from datetime import timedelta
 
+my_logger = logging.getLogger('TrufferHunter')
 
 class BaseSearcher:
     domains = []
     resolver = ''
+    repeats = 10 # number of dig requests per domain
 
     # Dig or kdig?
     dig_cmd = ''
@@ -50,7 +54,7 @@ class BaseSearcher:
                 resp = subprocess.check_output(['dig', '8.8.8.8'], universal_newlines=True)
                 self.dig_cmd = 'dig'
             except OSError as err:
-                logging.critical('Neither dig nor kdig found on this machine.')
+                my_logger.critical('Neither dig nor kdig found on this machine.')
                 exit(1)
 
     # def updateDomains(self):
@@ -66,7 +70,6 @@ class BaseSearcher:
     # Generate commands to pass via command line to dig/kdig
     def generateCommands(self, resolver):
         cmds = []
-        repeats = 10 # generate 1 dig request now
 
         # Generate commands for dig's batch mode
         for d in self.domains:
@@ -80,7 +83,7 @@ class BaseSearcher:
                 cmd = d + ' @' + resolver + ' ' + rd + ' +tries=1 +time=1 '
             else:
                 cmd = d + ' @' + resolver + ' ' + rd + ' +noretry +time=1 '
-            for i in range(0, repeats):
+            for i in range(0, self.repeats):
                 cmds.append(cmd)
 
         # Shuffle the list so no domains are consistently last, 
@@ -109,7 +112,7 @@ class BaseSearcher:
             
             # Find out which PoP this node currently hits
             loc = self.location_finder.getPoPLocation(resolver)
-            print("searchForDomains loc:",loc)
+            #printAndLog("searchForDomains loc:",loc,level = "INFO")
             search_results += dns_lib.multipleDigRequests(self.scripts[resolver], self.hostname, resolver, loc=loc, dig_cmd=self.dig_cmd)
         return search_results
 
@@ -119,6 +122,7 @@ class BaseSearcher:
         self.resolvers = resolvers
         self.hostname = hostname
         self.domains = domains
+        self.repeats = config.Config["search"]["number_of_attempts"]
         #self.updateDomains()
 
         for resolver in resolvers:
@@ -155,25 +159,27 @@ class Searcher(BaseSearcher):
             # Sleep for the remainder of the minute, but calculate that minute using total start time so errors don't accumulate
             time_remaining = (self.start_time + timedelta(minutes=(i+1)) - end_time).total_seconds()
             if time_remaining <= 0:
-                logging.debug("Negative time_remaining in runBaseSearcher:\n")
-                logging.debug("\tself.start_time: "+str(self.start_time)+"\n")
-                logging.debug("\ttimedelta(minutes=(i+1)): " + str(timedelta(minutes=(i+1))) + "\n")
-                logging.debug("\ti: "+ str(i))
-                logging.debug("\tend_time: " + str(end_time)+"\n")
-                logging.debug("\ttime_remaining: "+ str(time_remaining) + "\n")
+                my_logger.debug("Negative time_remaining in runBaseSearcher:\n")
+                my_logger.debug("\tself.start_time: "+str(self.start_time)+"\n")
+                my_logger.debug("\ttimedelta(minutes=(i+1)): " + str(timedelta(minutes=(i+1))) + "\n")
+                my_logger.debug("\ti: "+ str(i))
+                my_logger.debug("\tend_time: " + str(end_time)+"\n")
+                my_logger.debug("\ttime_remaining: "+ str(time_remaining) + "\n")
             elif time_remaining < 60 and time_remaining >= 0:
                 time.sleep(time_remaining)
-                # logging.debug("Time remaining: " + str(time_remaining))
+                # my_logger.debug("Time remaining: " + str(time_remaining))
             elif time_remaining > 60:
-                logging.debug("time_remaining greater than 60 in runBaseSearcher: " + str(time_remaining) + "\n")
+                my_logger.debug("time_remaining greater than 60 in runBaseSearcher: " + str(time_remaining) + "\n")
         
         # key for first dict: domain name
         # key for second dict: resolver
         # key for third dict: data entries
         # location is fixed for one resolver from one vantage point
         domain_to_pop_to_data_mapping = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        
+        printAndLog("Raw Dig Results:")
         for r in all_search_results:
-            print(r["requested_domain"],r["resolver"],r["dig_ts"],r["ttl"],r["pop_location"])
+            printAndLog(r)
             pop_to_data_mapping = domain_to_pop_to_data_mapping[r["requested_domain"]]
             pop_to_data_mapping[r["resolver"]]["dig_ts"].append(r["dig_ts"])
             pop_to_data_mapping[r["resolver"]]["ttl"].append(r["ttl"])
@@ -182,10 +188,10 @@ class Searcher(BaseSearcher):
         for requested_domain in domain_to_pop_to_data_mapping.keys():
             pop_to_data_mapping = domain_to_pop_to_data_mapping[requested_domain]
             for key in pop_to_data_mapping.keys():
-                print(pop_to_data_mapping[key]["ttl"])
+                #printAndLog(pop_to_data_mapping[key]["ttl"])
                 count = estimateFilledCaches(pop_to_data_mapping[key],key)
                 pop = all_search_results[0]['pop_location']
-                print("Domain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain.rstrip("."), key, pop, count, self.start_time.strftime("%Y-%m-%d %X %Z")))
+                print("\nDomain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain.rstrip("."), key, pop, count, self.start_time.strftime("%Y-%m-%d %X %Z")))
         
 
     def __init__(self, resolvers, domains, hostname='UNKNOWN_HOST'):

@@ -27,12 +27,12 @@ def coalesceHeadOrTail(lo, mid, hi):
     # Else, return all three.
     else:
         coalesced += [lo, mid, hi]
-    print("Coalesced head or tail: ", coalesced)
+    #print("Coalesced head or tail: ", coalesced)
     return coalesced
 
 def coalesce(x_ints):
     x_ints = sorted(set(x_ints))
-    print("Set of x_ints: ", x_ints)
+    #print("Set of x_ints: ", x_ints)
     coalesced = []
     one = timedelta(seconds=1)
     two = timedelta(seconds=2)
@@ -110,7 +110,7 @@ def estimateFilledCaches(ark_data, resolver):
     for (ts, ttl) in zip(ark_data['dig_ts'], ark_data['ttl']):
         if ttl <= 0:
             continue
-        print(ts, ttl)
+        #print(ts, ttl)
         x_ints.append(ts + timedelta(seconds=ttl))
         tss.append(ts)
         ttls.append(ttl)
@@ -118,7 +118,7 @@ def estimateFilledCaches(ark_data, resolver):
     if resolver == '9.9.9.9' or resolver == '149.112.112.112' or resolver == 'OpenDNS' or '208.67' in resolver:
         # "Randall method" (remove first and last from group)
         coalesced_x_ints = coalesce(x_ints)
-        print("Estimate filled caches: ", coalesced_x_ints)
+        #print("Estimate filled caches: ", coalesced_x_ints)
         return len(coalesced_x_ints)
     elif resolver == '1.1.1.1' or resolver == '1.0.0.1':
         # We can only see one cache hit per TTL

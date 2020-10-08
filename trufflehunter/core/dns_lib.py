@@ -1,3 +1,4 @@
+from . import config 
 from datetime import datetime
 import subprocess
 import re
@@ -146,7 +147,19 @@ class DigParser(DnsResponse):
         self.raw_dig_output = dig_output
     
     def __repr__(self):
-        return self.raw_dig_output
+        string = ""
+        string += 'Domain: ' + self.domain + ", "
+        string += 'Status: ' + self.status + ", "
+        string += 'Opcode: ' + self.opcode + ", "
+        string += 'Query type: ' + self.qtype + ", "
+        string += 'RTT: ' + str(self.rtt) + 'ms' + ", "
+        string += 'Dig timestamp: ' + str(self.dig_ts) + ", "
+        string += 'TTL: ' + str(self.ttl) + ", "
+        string += 'Response type: ' + self.r_type + ", "
+        string += 'IP: ' + self.ip + ", "
+        string += 'Deprecated timestamp: ' + str(self.ts) + ", "
+        string += 'Resolver: ' + str(self.resolver) + ", "
+        return string
 
 class KdigParser(DnsResponse):
     # hostname, ts,                       resolver, requested_domain, recursion_desired, response_domain, status,  opcode, rtt, dig_ts,                     ttl, response_type, ip,           pop_location
@@ -249,38 +262,38 @@ def splitResponses(resp):
     return responses
 
 
-def makeDigRequest(resolver, target, recursion_desired, raw_result_filename='', write_to_stdout=False, dig_cmd='dig', loc='None', hostname='UNKNOWN_HOSTNAME'):
-    recurse_flag = '+recurse'
-    if resolver[0] != '@':
-        resolver = '@' + resolver
-    if not recursion_desired:
-        recurse_flag = '+norecurse'
-    try:
-        resp = subprocess.check_output([dig_cmd, resolver, target, recurse_flag], universal_newlines=True)
-        ts = datetime.utcnow()
-    except subprocess.CalledProcessError as err:
-        logging.error('Check_output failed for dig, err = ', err)
-        return
+# def makeDigRequest(resolver, target, recursion_desired, raw_result_filename='', dig_cmd='dig', loc='None', hostname='UNKNOWN_HOSTNAME'):
+#     recurse_flag = '+recurse'
+#     if resolver[0] != '@':
+#         resolver = '@' + resolver
+#     if not recursion_desired:
+#         recurse_flag = '+norecurse'
+#     try:
+#         resp = subprocess.check_output([dig_cmd, resolver, target, recurse_flag], universal_newlines=True)
+#         ts = datetime.utcnow()
+#     except subprocess.CalledProcessError as err:
+#         logging.error('Check_output failed for dig, err = ', err)
+#         return
     
-    if raw_result_filename != '':
-        query = dig_cmd + ' ' + resolver + ' ' + target
-        if not recursion_desired:
-            query += ' ' + recurse_flag
-        dns_file = DnsFile(raw_result_filename)
-        dns_file.writeDigResults(ts, query, resp, raw_result_filename)
+#     if raw_result_filename != '':
+#         query = dig_cmd + ' ' + resolver + ' ' + target
+#         if not recursion_desired:
+#             query += ' ' + recurse_flag
+#         dns_file = DnsFile(raw_result_filename)
+#         dns_file.writeDigResults(ts, query, resp, raw_result_filename)
 
-    if write_to_stdout:
-        # CSV file. Columns:
-        # hostname, ts, resolver, requested_domain, recursion_desired, response_domain, status, opcode, rtt, dig_ts, ttl, response_type, ip, pop_location
-        # Example: Taliesin,2020-02-05 00:33:35.342429,8.8.8.8,a.thd.cc,False,a.thd.cc.,NOERROR,QUERY,6,2020-02-04 16:33:35,172,A,104.31.95.14,lax,
-        # ts, resolver, requested_domain, and recursion_desired are request parameters. Everything else comes from the response.
-        # Note that ts is in UTC and dig_ts is in the local time of the machine running the code
-        r = DnsResponse(resp, ts)
-        # r.printSerialized()
-        row = hostname + ',' + str(r.ts) + ',' + resolver.replace('@','') + ',' + target + ',' + str(recursion_desired) + ',' + r.domain + ',' + r.status + ',' + r.opcode + ',' + str(r.rtt) + ',' + str(r.dig_ts) + ',' + str(r.ttl) + ',' + r.r_type + ',' + r.ip + ',' + loc + ','
-        print(row)
+#     if config.Config["other"]["verbose"] == True:
+#         # CSV file. Columns:
+#         # hostname, ts, resolver, requested_domain, recursion_desired, response_domain, status, opcode, rtt, dig_ts, ttl, response_type, ip, pop_location
+#         # Example: Taliesin,2020-02-05 00:33:35.342429,8.8.8.8,a.thd.cc,False,a.thd.cc.,NOERROR,QUERY,6,2020-02-04 16:33:35,172,A,104.31.95.14,lax,
+#         # ts, resolver, requested_domain, and recursion_desired are request parameters. Everything else comes from the response.
+#         # Note that ts is in UTC and dig_ts is in the local time of the machine running the code
+#         r = DnsResponse(resp, ts)
+#         # r.printSerialized()
+#         row = hostname + ',' + str(r.ts) + ',' + resolver.replace('@','') + ',' + target + ',' + str(recursion_desired) + ',' + r.domain + ',' + r.status + ',' + r.opcode + ',' + str(r.rtt) + ',' + str(r.dig_ts) + ',' + str(r.ttl) + ',' + r.r_type + ',' + r.ip + ',' + loc + ','
+#         printAndLog(row)
     
-    return DnsResponse(resp, ts)
+#     return DnsResponse(resp, ts)
 
 '''
 Make multiple dig requests. Return a list of parsed dig results

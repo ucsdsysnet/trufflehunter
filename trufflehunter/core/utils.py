@@ -1,7 +1,8 @@
+from . import config
 import logging
+import argparse
 import re
 my_logger = logging.getLogger('TrufferHunter')
-
 
 """ Domain validation """
 def isValidHostname(hostname):
@@ -31,16 +32,26 @@ def parseDomains(domains):
         try:
             tmp = isValidHostname(domain)
             if tmp == False:
-                printAndLog("WARNING","{} is not a valid domain, we will skip it".format(domain))
+                printAndLog("{} is not a valid domain, we will skip it".format(domain), level = "WARNING")
                 continue
         except:
-            printAndLog("WARNING","{} is not a valid domain, we will skip it".format(domain))
+            printAndLog("{} is not a valid domain, we will skip it".format(domain), level = "WARNING")
             continue
         legit_domains.append(domain)
     return legit_domains
 
-def printAndLog(level, msg):
+def printAndLog(*msgs, level = "INFO"):
     level = level.lower()
-    print("{}: {}".format(level.capitalize(),msg))
     func = getattr(my_logger,level)
-    func(msg)
+    if config.Config["other"]["verbose"] == True:
+        print("{}: ".format(level),end="")
+        print(*msgs)
+        func(msgs)
+
+# check an integer is positive
+def checkPositive(value):
+    ivalue = int(value)
+    if ivalue <= 0:
+        raise argparse.ArgumentTypeError("%s is an invalid positive int value" % value)
+    return ivalue
+
