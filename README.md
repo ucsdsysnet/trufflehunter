@@ -4,7 +4,7 @@ Trufflehunter is a tool that uses DNS cache snooping on public DNS resolvers to 
 ## Usage
 To probe a domain with default settings, run the following command:
 ```bash
-python3 demo.py --domain=github.com
+python3 trufflehunter.py --domain=github.com
 ```
 
 Arguments supported:
@@ -16,7 +16,7 @@ Arguments supported:
 
 Probing with customized args:
 ```
-python3 demo.py --domain=github.com -v -n 5 -r 1.1.1.1 9.9.9.9 8.8.8.8
+python3 trufflehunter.py --domain=github.com -v -n 5 -r 1.1.1.1 9.9.9.9 8.8.8.8
 ```
 
 
