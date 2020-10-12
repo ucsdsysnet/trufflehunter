@@ -175,23 +175,34 @@ class Searcher(BaseSearcher):
         # key for second dict: resolver
         # key for third dict: data entries
         # location is fixed for one resolver from one vantage point
+
+        # construct initial state for all domains and all resolvers
         domain_to_pop_to_data_mapping = defaultdict(lambda: defaultdict(lambda: defaultdict(list)))
+        for requested_domain in self.domains:
+            for requested_resolver in self.resolvers:
+                _ = domain_to_pop_to_data_mapping[requested_domain][requested_resolver]["dig_ts"]
+                _ = domain_to_pop_to_data_mapping[requested_domain][requested_resolver]["ttl"]
+                _ = domain_to_pop_to_data_mapping[requested_domain][requested_resolver]["pop_location"]
         
         printAndLog("Raw Dig Results:")
         for r in all_search_results:
             printAndLog(r)
-            pop_to_data_mapping = domain_to_pop_to_data_mapping[r["requested_domain"]]
-            pop_to_data_mapping[r["resolver"]]["dig_ts"].append(r["dig_ts"])
-            pop_to_data_mapping[r["resolver"]]["ttl"].append(r["ttl"])
-            pop_to_data_mapping[r["resolver"]]["pop_location"].append(r["pop_location"])
+            if r["requested_domain"] in self.domains and r["resolver"] in self.resolvers:
+                resolver_to_data_mapping = domain_to_pop_to_data_mapping[r["requested_domain"]]
+                resolver_to_data_mapping[r["resolver"]]["dig_ts"].append(r["dig_ts"])
+                resolver_to_data_mapping[r["resolver"]]["ttl"].append(r["ttl"])
+                resolver_to_data_mapping[r["resolver"]]["pop_location"].append(r["pop_location"])
 
         for requested_domain in domain_to_pop_to_data_mapping.keys():
-            pop_to_data_mapping = domain_to_pop_to_data_mapping[requested_domain]
-            for key in pop_to_data_mapping.keys():
-                #printAndLog(pop_to_data_mapping[key]["ttl"])
-                count = estimateFilledCaches(pop_to_data_mapping[key],key)
-                pop = all_search_results[0]['pop_location']
-                print("\nDomain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain.rstrip("."), key, pop, count, self.start_time.strftime("%Y-%m-%d %X %Z")))
+            resolver_to_data_mapping = domain_to_pop_to_data_mapping[requested_domain]
+            for resolver in resolver_to_data_mapping.keys():
+                if len(resolver_to_data_mapping[resolver]["ttl"]) == 0:
+                    print("\nDomain:{}, Resolver:{}, ERROR_NO_DATA_AVAILABLE".format(requested_domain.rstrip("."), resolver))
+                else:
+                    #printAndLog(pop_to_data_mapping[key]["ttl"])
+                    count = estimateFilledCaches(resolver_to_data_mapping[resolver],resolver)
+                    resolver_location = all_search_results[0]['pop_location']
+                    print("\nDomain:{}, Resolver:{}, Location: {}, Cache Count: {}, Last Probed: {}".format(requested_domain.rstrip("."), resolver, resolver_location, count, self.start_time.strftime("%Y-%m-%d %X %Z")))
         
 
     def __init__(self, resolvers, domains, hostname='UNKNOWN_HOST'):
