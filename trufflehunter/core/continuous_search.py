@@ -187,7 +187,7 @@ class Searcher(BaseSearcher):
         printAndLog("Raw Dig Results:")
         for r in all_search_results:
             printAndLog(r)
-            if r["requested_domain"] in self.domains and r["resolver"] in self.resolvers:
+            if r["requested_domain"].strip(".").strip("\r\n") in self.domains and r["resolver"] in self.resolvers:
                 resolver_to_data_mapping = domain_to_pop_to_data_mapping[r["requested_domain"]]
                 resolver_to_data_mapping[r["resolver"]]["dig_ts"].append(r["dig_ts"])
                 resolver_to_data_mapping[r["resolver"]]["ttl"].append(r["ttl"])
