@@ -19,7 +19,10 @@ Probing with customized args:
 python3 trufflehunter.py --domain=github.com -v -n 5 -r 1.1.1.1 9.9.9.9 8.8.8.8
 ```
 
-# Cite Our Paper
+## Link to the Original Paper
+Here's the [link](https://cseweb.ucsd.edu/~schulman/docs/imc20-trufflehunter.pdf) to our paper.
+
+## Cite Our Paper
 ```
 @inproceedings{10.1145/3419394.3423640,
 author = {Randall, Audrey and Liu, Enze and Akiwate, Gautam and Padmanabhan, Ramakrishna and Voelker, Geoffrey M. and Savage, Stefan and Schulman, Aaron},
@@ -39,5 +42,5 @@ series = {IMC '20}
 }
 ```
 
-# Bugs and Issues
-This is software used and maintained for a research project and likely will have many bugs and issues. If you want to report any bugs or issues, please do it through the [Github Issue Page](https://github.com/ucsdsysnet/trufflehunter/issues).
+## Bugs and Issues
+This software is used and maintained for a research project and likely will have many bugs and issues. If you want to report any bugs or issues, please do it through the [Github Issue Page](https://github.com/ucsdsysnet/trufflehunter/issues).
