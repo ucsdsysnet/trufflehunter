@@ -38,3 +38,6 @@ location = {Virtual Event, USA},
 series = {IMC '20}
 }
 ```
+
+# Bugs and Issues
+This is software used and maintained for a research project and likely will have many bugs and issues. If you want to report any bugs or issues, please do it through the [Github Issue Page](https://github.com/ucsdsysnet/trufflehunter/issues).
