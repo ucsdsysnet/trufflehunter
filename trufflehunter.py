@@ -64,6 +64,10 @@ def main():
     if args.num_of_attempts:
         config.Config["search"]["number_of_attempts"] = args.num_of_attempts
     
+
+    if args.resolvers:
+        config.Config["search"]["resolvers"] = args.resolvers
+
     if len(domains) == 0:
         print("Please specify a valid domain. Exiting.")
         exit(1)
