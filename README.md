@@ -1,5 +1,20 @@
 # Trufflehunter
+[![Python 3.5](https://img.shields.io/badge/python-3.5-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![Python 3.7](https://img.shields.io/badge/python-3.7-blue.svg)](https://www.python.org/downloads/release/python-360/)
+[![Python 3.8](https://img.shields.io/badge/python-3.8-blue.svg)](https://www.python.org/downloads/release/python-360/)
+
 Trufflehunter is a tool that uses DNS cache snooping on public DNS resolvers to measure the prevalence of rare applications and domains on the Internet.
+
+## Installation
+```
+git clone https://github.com/ucsdsysnet/trufflehunter.git
+cd trufflehunter
+```
+
+## Dependencies
+We support Python 3 (3.5+). Additionally, you need to have `dig` (a command-line tool for querying the Domain Name System) installed in order to run our tool properly. We tested our tool with `dig` version `9.10.6` and `9.10.3` on Mac and Ubuntu respectively. 
+
 
 ## Usage
 To probe a domain with default settings, run the following command:
@@ -11,7 +26,7 @@ Arguments supported:
 ```
 -n: number of dig requests per domain per PoP. Default: 10
 -v: verbose mode. Default: False.
--r: resolvers, you can only specify a set of IPs. Use -h to see the all the IPs available. Default: 1.1.1.1 9.9.9.9
+-r: resolvers, you can only specify a set of IPs. Use -h to see all the IPs available. Default: 1.1.1.1 9.9.9.9
 ```
 
 Probing with customized args:
@@ -41,6 +56,7 @@ location = {Virtual Event, USA},
 series = {IMC '20}
 }
 ```
+
 
 ## Bugs and Issues
 This software is used and maintained for a research project and likely will have many bugs and issues. If you want to report any bugs or issues, please do it through the [Github Issue Page](https://github.com/ucsdsysnet/trufflehunter/issues).
