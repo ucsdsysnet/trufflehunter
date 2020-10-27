@@ -107,13 +107,20 @@ class BaseSearcher:
     '''
     def searchForDomains(self, shutdown_event=None):
         search_results = []
+        unknown_resolvers = []
         for resolver in self.resolvers:
             cmd_file = self.commandFileName(resolver)
             
             # Find out which PoP this node currently hits
             loc = self.location_finder.getPoPLocation(resolver)
+            if 'UNKNOWN' in loc:
+                unknown_resolvers.append(resolver)
             #printAndLog("searchForDomains loc:",loc,level = "INFO")
             search_results += dns_lib.multipleDigRequests(self.scripts[resolver], self.hostname, resolver, loc=loc, dig_cmd=self.dig_cmd)
+        if len(unknown_resolvers) > 0:
+            print('WARNING: Erroneous responses were returned for the location queries to the following resolvers:', unknown_resolvers)
+            print('These responses did not match the usual format of responses given by the public resolvers.')
+            print('Your ISP may be transparently proxying some or all of your DNS queries. For more info, see https://github.com/ucsdsysnet/trufflehunter/blob/master/README.md#isp-interception-of-dns-queries')
         return search_results
 
     def __init__(self, resolvers, hostname, domains):
