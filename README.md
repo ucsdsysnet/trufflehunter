@@ -6,6 +6,9 @@
 
 Trufflehunter is a tool that uses DNS cache snooping on public DNS resolvers to measure the prevalence of rare applications and domains on the Internet.
 
+## Update on GPDNS (As of March 2021)
+**Google confirmed with us that the ghosted caches we observed were caused by a bug, which was fixed by them in Jan. 2021.**
+
 ## Installation
 ```
 git clone https://github.com/ucsdsysnet/trufflehunter.git
