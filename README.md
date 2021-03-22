@@ -6,8 +6,8 @@
 
 Trufflehunter is a tool that uses DNS cache snooping on public DNS resolvers to measure the prevalence of rare applications and domains on the Internet.
 
-## Update on GPDNS 8.8.8.8 (As of March 2021)
-**Google confirmed with us that the ghosted caches we observed were caused by a bug, which was fixed by them in Jan. 2021.**
+## Update on GPDNS (IP: 8.8.8.8) as of March 2021
+**Google confirmed with us that the ghosted caches we observed were caused by a bug, which was fixed by them in Jan. 2021. This means our algorithm for 8.8.8.8 is deprecated (and thus inaccurate).** 
 
 ## Installation
 ```
@@ -16,7 +16,7 @@ cd trufflehunter
 ```
 
 ## Dependencies
-We support Python 3 (3.5+). Additionally, you need to have `dig` (a command-line tool for querying the Domain Name System) installed in order to run our tool properly. We tested our tool with `dig` version `9.10.6` and `9.10.3` on Mac and Ubuntu respectively. 
+We support Python 3 (3.5+). Additionally, you need to have `dig` (a command-line tool for querying the Domain Name System) installed in order to run our tool properly. We tested our tool with `dig` version `9.10.6` and `9.10.3` on Mac and Ubuntu respectively. Our support for `kdig` is known to be broken, so please use `dig` instead. 
 
 
 ## Usage
