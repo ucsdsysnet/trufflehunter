@@ -46,16 +46,11 @@ class BaseSearcher:
 
     def detectDigCmd(self):
         try:
-            resp = subprocess.check_output(['kdig', '8.8.8.8'], universal_newlines=True)
-            self.dig_cmd = 'kdig'
+            resp = subprocess.check_output(['dig', '8.8.8.8'], universal_newlines=True)
+            self.dig_cmd = 'dig'
         except OSError as err:
-            # If kdig wasn't found, try dig.
-            try:
-                resp = subprocess.check_output(['dig', '8.8.8.8'], universal_newlines=True)
-                self.dig_cmd = 'dig'
-            except OSError as err:
-                my_logger.critical('Neither dig nor kdig found on this machine.')
-                exit(1)
+            my_logger.critical('No dig found on this machine.')
+            exit(1)
 
     # def updateDomains(self):
     #     # Look for hostname.seldusaer.xyz subdomain to see which ISP each ark node is in (we can check our authoritative ns logs)
